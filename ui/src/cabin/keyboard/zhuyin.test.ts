@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { initialKeyboard, type KeyboardState, pick, press } from './editing'
-import { type Key, keyboardLanguage, keyRows } from './layouts'
+import { fromPc, type Key, keyboardLanguage, keyRows } from './layouts'
 import {
   candidates,
   type Composition,
@@ -62,6 +62,19 @@ describe('Zhuyin', () => {
     expect(rows[4].map((key) => key.kind)).toEqual(['layer', 'space', 'hide', 'return'])
     // Every symbol and tone, once.
     expect(new Set(faces.slice(0, 4).join(' ').split(' ')).size).toBe(37 + 4 + 1)
+  })
+
+  it("takes the player's own keys where the PC's standard layout (大千) has its symbols", () => {
+    const keys = ['1234567890-', 'qwertyuiop', 'asdfghjkl;', 'zxcvbnm,./']
+    expect(keys.map((row) => Array.from(row, (key) => fromPc('zh', key)).join(''))).toEqual([
+      'ㄅㄉˇˋㄓˊ˙ㄚㄞㄢㄦ',
+      'ㄆㄊㄍㄐㄔㄗㄧㄛㄟㄣ',
+      'ㄇㄋㄎㄑㄕㄘㄨㄜㄠㄤ',
+      'ㄈㄌㄏㄒㄖㄙㄩㄝㄡㄥ',
+    ])
+    expect(fromPc('zh', 'A')).toBeNull()
+    expect(fromPc('zh', ' ')).toBeNull()
+    expect(fromPc('en', 'a')).toBeNull()
   })
 
   it('builds syllables from their symbols, and starts the next where one can’t join', () => {

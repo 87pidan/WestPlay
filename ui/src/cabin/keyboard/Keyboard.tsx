@@ -23,12 +23,14 @@ const REPEAT_EVERY_MS = 90
  * 2026-11-09: the bubble only for keys pressed on the screen).
  *
  * Zhuyin's keyboard is taller: its candidates' row on top (Candidates.tsx), four rows of symbols under it; space
- * says it types the first tone while a syllable waits for one, return that it types what's composed.
+ * says it types the first tone while a syllable waits for one, return that it types what's composed. The
+ * player's own keyboard types Zhuyin on the PC's standard layout (store.ts), the chip saying how it chooses.
  */
 export function Keyboard() {
   const field = useKeyboard((state) => state.field)
   const keys = useKeyboard((state) => state.keys)
   const physical = useKeyboard((state) => state.physical)
+  const choosing = useKeyboard((state) => state.choosing !== null)
   const moving = useLive((state) => (state.telemetry ? Math.abs(state.telemetry.speed) * 3.6 > 1 : false))
   const text = useText()
   // The return key keeps its name while the keyboard goes away.
@@ -73,9 +75,15 @@ export function Keyboard() {
     again(REPEAT_AFTER_MS)
   }
 
+  // Typing Zhuyin on their own keyboard, the player is told how its candidates are chosen there.
+  const zhuyinText = keys.language === 'zh' ? text.keyboard.zhuyin : undefined
   const chip =
     physical === 'typing'
-      ? text.keyboard.typingWithKeyboard
+      ? zhuyinText
+        ? choosing
+          ? zhuyinText.choosing
+          : zhuyinText.typing
+        : text.keyboard.typingWithKeyboard
       : physical === 'paused'
         ? moving
           ? text.keyboard.pausedWhileDriving

@@ -99,13 +99,16 @@ export interface Strings {
     selectToType: string
     /** The Zhuyin keyboard's (Traditional Chinese's, keyboard/zhuyin.ts): space while a syllable waits for its
      * tone (it types the first), return while there's Zhuyin to type, and its candidates' row and the
-     * buttons that page through them. */
+     * buttons that page through them; the chip while the player's own keyboard types Zhuyin, and while it
+     * chooses a candidate (keyboard/store.ts). */
     zhuyin?: {
       firstTone: string
       confirm: string
       candidates: string
       previousCandidates: string
       nextCandidates: string
+      typing: string
+      choosing: string
     }
   }
   /** Music. */
