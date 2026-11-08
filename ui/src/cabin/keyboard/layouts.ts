@@ -48,6 +48,9 @@ interface Letters {
   shifted?: readonly string[]
   /** No shift key, where it would change nothing (Zhuyin's). */
   shift?: false
+  /** The keys of the player's own keyboard that type these letters, key for key, where they don't type their
+   * own (Zhuyin's: where the PC's standard Zhuyin layout, 大千, has them). */
+  pc?: readonly string[]
   /** Capitals by this language's rules. */
   locale: string
   /** What typing a letter does to the text, where it isn't adding it: joining Korean's letters, turning
@@ -99,6 +102,7 @@ const KEYBOARDS: Record<Language, Letters> = {
   // What's typed is composed (editing.ts), not added to the text.
   zh: {
     rows: ['ㄅㄉˇˋㄓˊ˙ㄚㄞㄢㄦ', 'ㄆㄊㄍㄐㄔㄗㄧㄛㄟㄣ', 'ㄇㄋㄎㄑㄕㄘㄨㄜㄠㄤ', 'ㄈㄌㄏㄒㄖㄙㄩㄝㄡㄥ'],
+    pc: ['1234567890-', 'qwertyuiop', 'asdfghjkl;', 'zxcvbnm,./'],
     locale: 'zh-TW',
     shift: false,
   },
@@ -197,6 +201,17 @@ export function capital(char: string, language: Language): string {
     }
   }
   return char.toLocaleUpperCase(locale)
+}
+
+/** The letter a character the player's own keyboard typed stands for on `language`'s keyboard, where its keys
+ * type that keyboard's letters (Zhuyin's: `1` is ㄅ, `q` ㄆ, `3` ˇ); `null` where it's typed as it is. */
+export function fromPc(language: Language, char: string): string | null {
+  const { rows, pc } = KEYBOARDS[language]
+  for (let row = 0; pc && row < pc.length; row++) {
+    const at = Array.from(pc[row]).indexOf(char)
+    if (at >= 0) return Array.from(rows[row])[at]
+  }
+  return null
 }
 
 /** The other keyboard, for the globe key: English from the language's own, the language's own from English. */
