@@ -97,6 +97,16 @@ export interface Strings {
     typingWithKeyboard: string
     pausedWhileDriving: string
     selectToType: string
+    /** The Zhuyin keyboard's (Traditional Chinese's, keyboard/zhuyin.ts): space while a syllable waits for its
+     * tone (it types the first), return while there's Zhuyin to type, and its candidates' row and the
+     * buttons that page through them. */
+    zhuyin?: {
+      firstTone: string
+      confirm: string
+      candidates: string
+      previousCandidates: string
+      nextCandidates: string
+    }
   }
   /** Music. */
   nowPlaying: string

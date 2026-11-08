@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { type Typing, useKeyboard } from './store'
+import { loadDictionary } from './zhuyin'
 
 /** A field as TextField makes it: the text it holds, and what was submitted. */
 function fakeField(id: string, returnKind: Typing['returnKind'] = 'search') {
@@ -81,6 +82,30 @@ describe('useKeyboard', () => {
     expect(field.submitted).toEqual(['Kokkola '])
     // Submitted: the field let go, so the keys are the game's again.
     expect(useKeyboard.getState().selection).toBe(0)
+  })
+
+  it("composes Zhuyin, picks its candidates, and types what's composed before the player's own keys", async () => {
+    await loadDictionary()
+    const { field, typing } = fakeField('search')
+    const keyboard = useKeyboard.getState()
+    keyboard.attach(typing, 'zh')
+    for (const char of 'ㄍㄠㄒㄩㄥˊㄕˋ') useKeyboard.getState().press({ kind: 'char', char })
+    // Composed, not yet in the field.
+    expect(field.text).toBe('')
+    expect(useKeyboard.getState().zhuyinReady).toBe(true)
+    keyboard.pick({ text: '高雄', syllables: 2 })
+    expect(field.text).toBe('高雄')
+    expect(useKeyboard.getState().keys.composition?.syllables).toHaveLength(1)
+    keyboard.pick({ text: '市', syllables: 1 })
+    // The player's own keyboard: what's composed first, then what they typed.
+    for (const char of 'ㄌㄨˋ') useKeyboard.getState().press({ kind: 'char', char })
+    keyboard.typed({ text: ' 1' })
+    expect(field.text).toBe('高雄市路 1')
+    expect(useKeyboard.getState().keys.composition).toBeNull()
+    // The field gone: what was composed for it goes too.
+    useKeyboard.getState().press({ kind: 'char', char: 'ㄅ' })
+    keyboard.detach('search')
+    expect(useKeyboard.getState().keys.composition).toBeNull()
   })
 
   it('numbers every selection, and lets go of it with Esc', () => {

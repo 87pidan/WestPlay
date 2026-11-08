@@ -114,10 +114,11 @@
   height: 30px;
 }
 
-/* Shift and delete share what the third row leaves; on the numbers and symbols, its five keys share it too. */
+/* Shift and delete share what the third row leaves; on the numbers and symbols, its five keys share it too (the
+   third row of keys, whatever's before them: the chip, Zhuyin's candidates). */
 .keyboard .key.wide,
-.keyboard.numbers .keyboard-row:nth-child(3) .key,
-.keyboard.symbols .keyboard-row:nth-child(3) .key {
+.keyboard.numbers .keyboard-row:nth-child(3 of .keyboard-row) .key,
+.keyboard.symbols .keyboard-row:nth-child(3 of .keyboard-row) .key {
   flex: 1 1 0;
 }
 
@@ -189,6 +190,91 @@
   text-box-edge: cap alphabetic;
 }
 
+/* Zhuyin (Traditional Chinese, Keyboard.tsx): its candidates' row on top and four rows of symbols under it, the
+   keyboard taller for them (and what makes room for it with it: shell.css's `--keyboard-height`). */
+.shell:has(.keyboard.zhuyin) {
+  --keyboard-height: 404px;
+}
+
+.keyboard.zhuyin {
+  padding-block: 10px 16px;
+  grid-template-rows: 48px;
+  grid-auto-rows: 1fr;
+  gap: 8px;
+}
+
+/* Zhuyin's symbols are drawn on the square the Chinese characters are: centred on the capitals' height, as the
+   digits are, not on the x-height. */
+.keyboard.zhuyin.letters .key,
+.keyboard.zhuyin.letters .key-bubble {
+  text-box-edge: cap alphabetic;
+}
+
+.keyboard-candidates {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Scrolled by its arrows (Candidates.tsx), not by the mouse. */
+.keyboard-candidates .candidates-row {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 4px;
+  position: relative;
+  overflow: hidden;
+  scroll-behavior: smooth;
+}
+
+.keyboard-candidates .candidate {
+  flex: none;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 28px;
+  white-space: nowrap;
+}
+
+/* The likeliest first, lit as a key is: space and return type it. */
+.keyboard-candidates .candidate.first {
+  background: var(--key-fn);
+}
+
+.keyboard-candidates .candidate:active {
+  background: var(--key);
+}
+
+.keyboard-candidates .candidates-page {
+  flex: none;
+  width: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: var(--key-fn);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+}
+
+.keyboard-candidates .candidates-page:disabled {
+  opacity: 0.3;
+}
+
+.keyboard-candidates .candidates-page svg {
+  width: 24px;
+  height: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .keyboard-candidates .candidates-row {
+    scroll-behavior: auto;
+  }
+}
+
 /* A text field: the text, a blinking caret while it's being typed into, the hint while empty, a clear
    button once there is text. */
 .text-field {
@@ -231,6 +317,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text-dim);
+}
+
+/* Zhuyin being composed (TextField.tsx): marked, as the iPhone marks it, until it's typed. */
+.text-field-composing {
+  flex: none;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--system-blue) 28%, transparent);
 }
 
 .text-field-caret {
@@ -351,5 +444,27 @@
 
   .keyboard .key.fn {
     font-size: 16px;
+  }
+
+  /* Zhuyin's keyboard taller here too, its keys about as tall as the others'. */
+  .shell:has(.keyboard.zhuyin) :is(.screen-slot, .keyboard) {
+    --keyboard-height: 268px;
+  }
+
+  .keyboard.zhuyin {
+    padding-block: 8px 14px;
+    grid-template-rows: 32px;
+    gap: 5px;
+  }
+
+  .keyboard-candidates .candidate {
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 21px;
+  }
+
+  .keyboard-candidates .candidates-page {
+    width: 36px;
+    border-radius: 10px;
   }
 }

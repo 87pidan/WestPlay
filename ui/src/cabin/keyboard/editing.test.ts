@@ -40,7 +40,7 @@ describe('keyRows', () => {
     // Canada's French, Italian, Chinese: QWERTY.
     for (const language of ['fr_ca', 'it_it', 'zh_cn', 'en_us']) expect(keyboardLanguage(language)).toBe('en')
     // No row wider than the top one: the keys take its width.
-    for (const language of ['tr', 'de', 'fr', 'hu', 'et', 'hr', 'ru', 'uk', 'bg', 'mk', 'sr', 'ka', 'ko'] as const) {
+    for (const language of ['tr', 'de', 'fr', 'hu', 'et', 'hr', 'ru', 'uk', 'bg', 'mk', 'sr', 'ka', 'ko', 'zh'] as const) {
       const rows = keyRows(language, 'letters')
       for (const row of rows.slice(1, 3)) expect(row.length, language).toBeLessThanOrEqual(rows[0].length)
     }
