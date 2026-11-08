@@ -102,6 +102,13 @@ export const strings: Strings = {
     typingWithKeyboard: '正在用鍵盤輸入',
     pausedWhileDriving: '駕駛時無法使用鍵盤',
     selectToType: '選取輸入欄位即可用鍵盤輸入',
+    zhuyin: {
+      firstTone: '一聲',
+      confirm: '確認',
+      candidates: '候選字',
+      previousCandidates: '上一頁候選字',
+      nextCandidates: '下一頁候選字',
+    },
   },
   nowPlaying: '正在播放',
   sources: '來源',
