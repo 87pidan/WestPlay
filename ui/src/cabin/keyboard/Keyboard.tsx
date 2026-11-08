@@ -2,6 +2,7 @@ import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { useCover } from '../apps/safari/hole'
 import { useLive } from '../state/store'
 import { useText } from '../state/text'
+import { Candidates } from './Candidates'
 import { DeleteGlyph, GlobeGlyph, HideGlyph, KeysGlyph, ShiftGlyph } from './glyphs'
 import { capital, type Key, keyRows, type Language, type ReturnKind } from './layouts'
 import { useKeyboard } from './store'
@@ -20,6 +21,9 @@ const REPEAT_EVERY_MS = 90
  * The player's own keyboard types into the field too while the truck stands still (the game plugin's
  * `typing`): a chip on top says so (or that it's paused while driving). Its keys show no bubble here (owner
  * 2026-11-09: the bubble only for keys pressed on the screen).
+ *
+ * Zhuyin's keyboard is taller: its candidates' row on top (Candidates.tsx), four rows of symbols under it; space
+ * says it types the first tone while a syllable waits for one, return that it types what's composed.
  */
 export function Keyboard() {
   const field = useKeyboard((state) => state.field)
@@ -79,12 +83,17 @@ export function Keyboard() {
         : null
 
   const rows = keyRows(keys.language, keys.layer, keys.own !== 'en')
+  const zhuyin = keys.language === 'zh'
+  const composition = keys.composition
+  const spaceLabel = composition?.open && text.keyboard.zhuyin ? text.keyboard.zhuyin.firstTone : text.keyboard.space
+  const returnLabel =
+    composition && text.keyboard.zhuyin ? text.keyboard.zhuyin.confirm : text.keyboard.returnKey[returnKind]
   // Keys are as wide as the top row's: the rest of the rows centre under it.
   const style = { '--across': rows[0].length } as CSSProperties
   return (
     <div
       ref={panel}
-      className={`keyboard ${keys.layer}${field ? ' shown' : ''}`}
+      className={`keyboard ${keys.layer}${zhuyin ? ' zhuyin' : ''}${field ? ' shown' : ''}`}
       style={style}
       aria-hidden={!field}
       inert={!field}
@@ -95,6 +104,7 @@ export function Keyboard() {
           {chip}
         </div>
       )}
+      {zhuyin && <Candidates composition={composition} />}
       {rows.map((row, r) => (
         <div key={r} className={r === rows.length - 1 ? 'keyboard-row bottom' : 'keyboard-row'}>
           {row.map((key, i) => {
@@ -144,8 +154,8 @@ export function Keyboard() {
                 {key.kind === 'delete' && <DeleteGlyph />}
                 {key.kind === 'globe' && <GlobeGlyph />}
                 {key.kind === 'hide' && <HideGlyph />}
-                {key.kind === 'space' && text.keyboard.space}
-                {key.kind === 'return' && text.keyboard.returnKey[returnKind]}
+                {key.kind === 'space' && spaceLabel}
+                {key.kind === 'return' && returnLabel}
                 {key.kind === 'layer' && LAYER_LABELS[key.to]}
               </button>
             )

@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'rea
 import { useLanguage, useText } from '../state/text'
 import { keyboardLanguage, type ReturnKind } from './layouts'
 import { type Typing, useKeyboard } from './store'
+import { spelled } from './zhuyin'
 
 interface TextFieldProps {
   /** Unique among the fields on screen. */
@@ -24,7 +25,8 @@ interface TextFieldProps {
 /**
  * A field the keyboard types into. Not an `<input>`: the page never has the PC's keyboard (the game does),
  * so WestPlay draws its own field, caret and all, and the keyboard (store.ts) writes into it. Pressing it
- * selects it and brings the keyboard up; it lets go when it leaves the screen.
+ * selects it and brings the keyboard up; it lets go when it leaves the screen. Zhuyin being composed shows
+ * after the text, marked, until it's typed (zhuyin.ts).
  */
 export function TextField({
   id,
@@ -39,6 +41,9 @@ export function TextField({
 }: TextFieldProps) {
   const text = useText()
   const typing = useKeyboard((state) => state.field?.id === id)
+  const composing = useKeyboard((state) =>
+    state.field?.id === id && state.keys.composition ? spelled(state.keys.composition.syllables) : '',
+  )
   const language = keyboardLanguage(useLanguage())
 
   // The newest props, for the keyboard to call; and the text as last written, so keys pressed faster than
@@ -73,7 +78,7 @@ export function TextField({
   const shown = useRef<HTMLSpanElement>(null)
   useLayoutEffect(() => {
     if (shown.current) shown.current.scrollLeft = shown.current.scrollWidth
-  }, [value, typing])
+  }, [value, typing, composing])
 
   return (
     <div
@@ -87,10 +92,11 @@ export function TextField({
       {icon}
       <span ref={shown} className="text-field-text">
         {value}
+        {composing && <span className="text-field-composing">{composing}</span>}
         {typing && <span className="text-field-caret" aria-hidden />}
-        {!value && <span className="text-field-hint">{hint}</span>}
+        {!value && !composing && <span className="text-field-hint">{hint}</span>}
       </span>
-      {value && (
+      {(value || composing) && (
         <button
           type="button"
           tabIndex={-1}
@@ -98,6 +104,7 @@ export function TextField({
           aria-label={text.keyboard.clear}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => {
+            if (typing) useKeyboard.getState().discard()
             current.current = ''
             onChange('')
           }}

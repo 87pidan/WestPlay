@@ -1,7 +1,7 @@
 import type { Shift } from './editing'
 
 /** The keyboard's symbols, drawn for WestPlay (no SF Symbols): shift (outlined, filled, locked), delete,
- * the globe and hide. */
+ * the globe, hide and Zhuyin's candidates' arrows. */
 
 export function ShiftGlyph({ shift }: { shift: Shift }) {
   const filled = shift !== 'off'
@@ -43,6 +43,19 @@ export function HideGlyph() {
       <rect x="3" y="4" width="18" height="11" rx="2" />
       <path d="M6.5 7.5h1m2.5 0h1m2.5 0h1m2.5 0h.5m-10.5 3.5h11" strokeLinecap="round" />
       <path d="m9 18 3 2.5 3-2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/** Zhuyin's candidates' arrows: the page before, and the next. */
+export function ChevronGlyph({ direction }: { direction: 'left' | 'right' }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2">
+      <path
+        d={direction === 'left' ? 'm14.5 5-7 7 7 7' : 'm9.5 5 7 7-7 7'}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }

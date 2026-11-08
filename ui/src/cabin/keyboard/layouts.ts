@@ -8,8 +8,10 @@ import { kanaTyped } from './kana'
  * Letters are written lowercase; shift makes them capitals by their language's rules (Turkish i and ı are İ and
  * I), or, where a script has no capitals, its other letters (Georgian's, Korean's doubled consonants). Korean's
  * letters join into syllables as they're typed, and Japanese is typed in romaji, which turns to kana as it
- * goes (as iOS's Romaji keyboard does, without its kanji); Chinese's pinyin needs a dictionary to become
- * characters, so Chinese types Latin letters, as Vietnamese does without Telex's tone marks.
+ * goes (as iOS's Romaji keyboard does, without its kanji). Traditional Chinese is typed in Zhuyin, four rows of
+ * its symbols and tones as on the iPhone (and the PC's standard layout), turned into characters by a dictionary
+ * as it's typed (zhuyin.ts, editing.ts). Simplified Chinese's pinyin types Latin letters for now, as Vietnamese
+ * does without Telex's tone marks.
  */
 
 /** A keyboard, by the letters it has. */
@@ -37,11 +39,15 @@ export type Language =
   | 'ka'
   | 'ja'
   | 'ko'
+  | 'zh'
 
 interface Letters {
-  rows: readonly [string, string, string]
+  /** Three rows of letters (Zhuyin's four), the last between shift and delete. */
+  rows: readonly string[]
   /** Shift's letters, where they aren't the letters in capitals: key for key. */
-  shifted?: readonly [string, string, string]
+  shifted?: readonly string[]
+  /** No shift key, where it would change nothing (Zhuyin's). */
+  shift?: false
   /** Capitals by this language's rules. */
   locale: string
   /** What typing a letter does to the text, where it isn't adding it: joining Korean's letters, turning
@@ -89,6 +95,13 @@ const KEYBOARDS: Record<Language, Letters> = {
     typed: hangulTyped,
     deleted: hangulDeleted,
   },
+  // The tones in the top row, where the PC's standard layout has them on 3, 4, 6 and 7; space is the first.
+  // What's typed is composed (editing.ts), not added to the text.
+  zh: {
+    rows: ['ㄅㄉˇˋㄓˊ˙ㄚㄞㄢㄦ', 'ㄆㄊㄍㄐㄔㄗㄧㄛㄟㄣ', 'ㄇㄋㄎㄑㄕㄘㄨㄜㄠㄤ', 'ㄈㄌㄏㄒㄖㄙㄩㄝㄡㄥ'],
+    locale: 'zh-TW',
+    shift: false,
+  },
 }
 
 /** Each game language's keyboard (by its code's language, or the whole code where a language has two). */
@@ -120,10 +133,11 @@ const BY_LANGUAGE: Record<string, Language> = {
   ka: 'ka',
   ja: 'ja',
   ko: 'ko',
+  zh_tw: 'zh',
 }
 
 /** The keyboard for the cabin's language (a game code, `de_de`): its own, or QWERTY (English, Italian, Dutch,
- * Portuguese, Polish, Romanian, the Baltic languages, Canada's French, Vietnamese, Chinese). */
+ * Portuguese, Polish, Romanian, the Baltic languages, Canada's French, Vietnamese, Simplified Chinese). */
 export function keyboardLanguage(language: CabinLanguage): Language {
   return BY_LANGUAGE[language] ?? BY_LANGUAGE[language.slice(0, 2)] ?? 'en'
 }
@@ -152,19 +166,23 @@ const SYMBOLS = ['[]{}#%^*+=', '_\\|~<>$£¥•', ".,?!'"]
 
 const chars = (row: string): Key[] => Array.from(row, (char) => ({ kind: 'char', char }))
 
-/** The keys of a layer, row by row: three rows of characters, then the bottom row (the globe only where
- * there's another keyboard to go to). */
+/** The keys of a layer, row by row: three rows of characters (Zhuyin's letters four), then the bottom row (the
+ * globe only where there's another keyboard to go to). */
 export function keyRows(language: Language, layer: Layer, globe = language !== 'en'): Key[][] {
-  const rows = layer === 'letters' ? KEYBOARDS[language].rows : layer === 'numbers' ? NUMBERS : SYMBOLS
-  const [top, middle, bottom] = rows.map(chars)
-  // Left of the third row: shift on letters, the other symbols layer on the others.
-  const left: Key =
-    layer === 'letters' ? { kind: 'shift' } : { kind: 'layer', to: layer === 'numbers' ? 'symbols' : 'numbers' }
+  const letters = KEYBOARDS[language]
+  const rows = (layer === 'letters' ? letters.rows : layer === 'numbers' ? NUMBERS : SYMBOLS).map(chars)
+  const last = rows.pop() ?? []
+  // Left of the last row: shift on letters (that have it), the other symbols layer on the others.
+  const left: Key[] =
+    layer !== 'letters'
+      ? [{ kind: 'layer', to: layer === 'numbers' ? 'symbols' : 'numbers' }]
+      : letters.shift === false
+        ? []
+        : [{ kind: 'shift' }]
   const switcher: Key = layer === 'letters' ? { kind: 'layer', to: 'numbers' } : { kind: 'layer', to: 'letters' }
   return [
-    top,
-    middle,
-    [left, ...bottom, { kind: 'delete' }],
+    ...rows,
+    [...left, ...last, { kind: 'delete' }],
     [switcher, ...(globe ? [{ kind: 'globe' } as Key] : []), { kind: 'space' }, { kind: 'hide' }, { kind: 'return' }],
   ]
 }
@@ -173,7 +191,7 @@ export function keyRows(language: Language, layer: Layer, globe = language !== '
 export function capital(char: string, language: Language): string {
   const { rows, shifted, locale } = KEYBOARDS[language]
   if (shifted) {
-    for (let row = 0; row < 3; row++) {
+    for (let row = 0; row < rows.length; row++) {
       const at = Array.from(rows[row]).indexOf(char)
       if (at >= 0) return Array.from(shifted[row])[at]
     }
