@@ -108,6 +108,8 @@ export const strings: Strings = {
       candidates: '候選字',
       previousCandidates: '上一頁候選字',
       nextCandidates: '下一頁候選字',
+      typing: '用鍵盤打注音（空白鍵選字）',
+      choosing: '按數字選字，空白鍵換頁',
     },
   },
   nowPlaying: '正在播放',

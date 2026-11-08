@@ -19,7 +19,7 @@ function fakeField(id: string, returnKind: Typing['returnKind'] = 'search') {
 }
 
 afterEach(() => {
-  useKeyboard.setState({ field: null, selection: 0, chosen: null, flash: null })
+  useKeyboard.setState({ field: null, selection: 0, chosen: null, flash: null, choosing: null, numbered: [] })
 })
 
 describe('useKeyboard', () => {
@@ -97,15 +97,87 @@ describe('useKeyboard', () => {
     expect(field.text).toBe('高雄')
     expect(useKeyboard.getState().keys.composition?.syllables).toHaveLength(1)
     keyboard.pick({ text: '市', syllables: 1 })
-    // The player's own keyboard: what's composed first, then what they typed.
+    // Text from the player's own keyboard that isn't Zhuyin's keys (pasted): what's composed first.
     for (const char of 'ㄌㄨˋ') useKeyboard.getState().press({ kind: 'char', char })
-    keyboard.typed({ text: ' 1' })
-    expect(field.text).toBe('高雄市路 1')
+    keyboard.typed({ text: ' 1號' })
+    expect(field.text).toBe('高雄市路 1號')
     expect(useKeyboard.getState().keys.composition).toBeNull()
     // The field gone: what was composed for it goes too.
     useKeyboard.getState().press({ kind: 'char', char: 'ㄅ' })
     keyboard.detach('search')
     expect(useKeyboard.getState().keys.composition).toBeNull()
+  })
+
+  it("types Zhuyin on the player's own keyboard, on the PC's standard layout", async () => {
+    await loadDictionary()
+    const { field, typing } = fakeField('search')
+    const keyboard = useKeyboard.getState()
+    keyboard.attach(typing, 'zh')
+    // ㄊㄞˊㄅㄟˇ: w 9 6, 1 o 3; composed, not yet in the field, its last key lit on screen.
+    keyboard.typed({ text: 'w96' })
+    keyboard.typed({ text: '1o3' })
+    expect(field.text).toBe('')
+    expect(useKeyboard.getState().flash?.char).toBe('ˇ')
+    // Return types the likeliest; the next submits.
+    keyboard.typed({ key: 'enter' })
+    expect(field.text).toBe('台北')
+    keyboard.typed({ key: 'enter' })
+    expect(field.submitted).toEqual(['台北'])
+  })
+
+  it("chooses Zhuyin's candidates on the player's own keyboard: space, then a digit", async () => {
+    await loadDictionary()
+    const { field, typing } = fakeField('search')
+    const keyboard = useKeyboard.getState()
+    keyboard.attach(typing, 'zh')
+    // Space after a syllable waiting for its tone is the first tone (ㄨ, j); after the tone, choosing.
+    keyboard.typed({ text: 'j ' })
+    expect(useKeyboard.getState()).toMatchObject({ choosing: null, keys: { composition: { open: false } } })
+    keyboard.typed({ text: ' ' })
+    expect(useKeyboard.getState().choosing).toBe(0)
+    // The candidates' row numbers those it shows (Candidates.tsx; no page here, so given).
+    useKeyboard.setState({
+      numbered: [
+        { text: '屋', syllables: 1 },
+        { text: '烏', syllables: 1 },
+      ],
+    })
+    keyboard.typed({ text: ' ' })
+    expect(useKeyboard.getState().choosing).toBe(1)
+    keyboard.typed({ text: '2' })
+    expect(field.text).toBe('烏')
+    expect(useKeyboard.getState()).toMatchObject({ choosing: null, keys: { composition: null } })
+    // Return picks the first shown; Esc stops choosing, the keyboard staying up.
+    keyboard.typed({ text: 'j  ' })
+    useKeyboard.setState({ numbered: [{ text: '屋', syllables: 1 }] })
+    keyboard.typed({ key: 'enter' })
+    expect(field.text).toBe('烏屋')
+    keyboard.typed({ text: 'j  ' })
+    keyboard.typed({ key: 'escape' })
+    expect(useKeyboard.getState()).toMatchObject({ choosing: null, field: { id: 'search' } })
+    // Any other key stops choosing and types as it would: ㄅ after what's composed.
+    keyboard.typed({ text: '1' })
+    expect(useKeyboard.getState().keys.composition?.syllables).toHaveLength(2)
+  })
+
+  it('types capitals, full-width punctuation and pasted text as they are while Zhuyin shows', async () => {
+    await loadDictionary()
+    const { field, typing } = fakeField('search')
+    const keyboard = useKeyboard.getState()
+    keyboard.attach(typing, 'zh')
+    keyboard.typed({ text: 'A' })
+    keyboard.typed({ text: '<' })
+    keyboard.typed({ text: 'Taipei 101' })
+    keyboard.typed({ text: '高雄' })
+    expect(field.text).toBe('A，Taipei 101高雄')
+    // What's composed goes first: ㄨㄛˇ (j i 3).
+    keyboard.typed({ text: 'ji3' })
+    keyboard.typed({ text: '?' })
+    expect(field.text).toBe('A，Taipei 101高雄我？')
+    // On English, the keys type their own.
+    keyboard.press({ kind: 'globe' })
+    keyboard.typed({ text: 'ji3' })
+    expect(field.text).toBe('A，Taipei 101高雄我？ji3')
   })
 
   it('numbers every selection, and lets go of it with Esc', () => {
