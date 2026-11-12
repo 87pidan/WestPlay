@@ -6,7 +6,8 @@
 //! become key presses or typed characters for it), and polling reports it as up. Each press goes to the app
 //! as what it types. Otherwise every key reaches the game, the interaction key held or not, so keyboard
 //! drivers can steer and brake while using the screen; but a key bound to WestPlay (`keybinds`) pressed while
-//! its binding counts, from its going down to its release.
+//! its binding counts, from its going down to its release. While the player types, Windows' own input method is
+//! put aside from the game's window (`ime`), so the keys reach WestPlay as they're pressed.
 
 use std::ffi::c_void;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -20,7 +21,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use windows::core::{BOOL, PCSTR, s, w};
 
 use crate::hooks::{guarded, hook};
-use crate::{keybinds, typing};
+use crate::{ime, keybinds, typing};
 
 type PeekMessageWFn = unsafe extern "system" fn(*mut MSG, HWND, u32, u32, u32) -> BOOL;
 type GetMessageWFn = unsafe extern "system" fn(*mut MSG, HWND, u32, u32) -> BOOL;
@@ -124,8 +125,17 @@ fn hidden(key: u32) -> bool {
 /// While the player types, takes every key's messages (but the game's own) away from the game, turning them
 /// into `WM_NULL`, each press queued as what it types; and a bound key's presses while its binding counts.
 fn filter(msg: &mut MSG) {
-    let key = msg.wParam.0 as u32;
-    let typed = typing::typing()
+    let typing = typing::typing();
+    let key_message = matches!(msg.message, WM_KEYDOWN | WM_SYSKEYDOWN | WM_KEYUP | WM_SYSKEYUP);
+    // SAFETY: a message of the game's window, filtered on its own thread as it's taken from its queue.
+    let key = unsafe {
+        let as_sent = msg.wParam.0 as u32;
+        // A key Windows' input method took while typing: the key pressed, read back before the input method goes.
+        let key = if typing && key_message { ime::original_key(msg.hwnd, as_sent) } else { as_sent };
+        ime::follow(msg.hwnd, typing, key_message, as_sent);
+        key
+    };
+    let typed = typing
         && matches!(
             msg.message,
             WM_KEYDOWN | WM_SYSKEYDOWN | WM_KEYUP | WM_SYSKEYUP | WM_CHAR | WM_SYSCHAR | WM_DEADCHAR | WM_SYSDEADCHAR

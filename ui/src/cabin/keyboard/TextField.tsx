@@ -64,6 +64,7 @@ export function TextField({
         latest.current.onChange(next)
       },
       submit: () => latest.current.onSubmit?.(),
+      showsComposition: true,
     }),
     [id, returnKind],
   )

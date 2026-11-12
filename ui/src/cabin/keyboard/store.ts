@@ -11,6 +11,9 @@ export interface Typing {
   read(): string
   write(text: string): void
   submit(): void
+  /** Whether it shows Zhuyin being composed itself (TextField's, marked after its text); for one that doesn't (a
+   * web page's field, Safari's), the keyboard shows it beside its candidates. */
+  showsComposition?: boolean
 }
 
 interface KeyboardStore {

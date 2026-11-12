@@ -8,10 +8,11 @@ import { candidates, type Composition } from './zhuyin'
  * Zhuyin's candidates (zhuyin.ts) in a row along the keyboard's top, as on the iPhone: what's composed could be
  * any of them, the likeliest first, and pressing one types it. The cab's mouse can't swipe the row along, so the
  * arrows at its ends page through it, a page starting with the first candidate the one before didn't show whole.
+ * For a field that doesn't show the Zhuyin being composed (a web page's), it's shown first, as typed.
  * Chosen on the player's own keyboard (store.ts `choosing`), the candidates shown whole are numbered 1 to 9 and 0
  * for its digits, and each turn shows the next page (the first again after the last).
  */
-export function Candidates({ composition }: { composition: Composition | null }) {
+export function Candidates({ composition, reading }: { composition: Composition | null; reading?: string }) {
   const text = useText().keyboard.zhuyin
   const ready = useKeyboard((state) => state.zhuyinReady)
   const choosing = useKeyboard((state) => state.choosing)
@@ -74,6 +75,7 @@ export function Candidates({ composition }: { composition: Composition | null })
 
   return (
     <div className="keyboard-candidates" role="group" aria-label={text?.candidates}>
+      {reading && <span className="candidates-reading">{reading}</span>}
       {offered.length > 0 && (
         <>
           <button
