@@ -6,6 +6,7 @@ import { Candidates } from './Candidates'
 import { DeleteGlyph, GlobeGlyph, HideGlyph, KeysGlyph, ShiftGlyph } from './glyphs'
 import { capital, type Key, keyRows, type Language, type ReturnKind } from './layouts'
 import { useKeyboard } from './store'
+import { spelled } from './zhuyin'
 import './keyboard.css'
 
 /** Holding delete: how long before it repeats, and how often then, ms. */
@@ -112,7 +113,12 @@ export function Keyboard() {
           {chip}
         </div>
       )}
-      {zhuyin && <Candidates composition={composition} />}
+      {zhuyin && (
+        <Candidates
+          composition={composition}
+          reading={composition && field && !field.showsComposition ? spelled(composition.syllables) : undefined}
+        />
+      )}
       {rows.map((row, r) => (
         <div key={r} className={r === rows.length - 1 ? 'keyboard-row bottom' : 'keyboard-row'}>
           {row.map((key, i) => {

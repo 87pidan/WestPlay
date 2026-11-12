@@ -9,6 +9,7 @@ mod camera;
 mod d3d;
 mod frame;
 mod hooks;
+mod ime;
 mod input;
 mod keybinds;
 mod keyboard;
